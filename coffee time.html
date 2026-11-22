@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Café Explorer | 全台咖啡廳探索指南</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            espresso: {
+              50: '#fdfbf7',
+              100: '#f7f2ea',
+              200: '#eddcc8',
+              300: '#dfbe9f',
+              400: '#ce9c72',
+              500: '#b87d4b',
+              600: '#9e623b',
+              700: '#804c32',
+              800: '#693f2d',
+              900: '#563528',
+              950: '#301b14',
+            },
+            cream: {
+              50: '#fefcf9',
+              100: '#fcf8f2',
+              200: '#f8efdf',
+              300: '#f2dfc2',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #fdfbf7;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f7f2ea;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #ce9c72;
+      border-radius: 9999px;
+    }
+    .glass-nav {
+      background: rgba(253, 251, 247, 0.85);
+      backdrop-filter: blur(12px);
+    }
+    #map-container {
+      height: 520px;
+      width: 100%;
+      border-radius: 1.5rem;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body class="text-espresso-950 min-h-screen flex flex-col justify-between selection:bg-espresso-300 selection:text-espresso-950">
+
+  <!-- 頂部導覽列 Header -->
+  <header class="sticky top-0 z-40 glass-nav border-b border-espresso-100 transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('explore')">
+        <div class="w-10 h-10 rounded-full bg-espresso-700 text-cream-50 flex items-center justify-center shadow-md">
+          <i class="fa-solid font-bold fa-mug-hot text-xl"></i>
+        </div>
+        <div>
+          <span class="text-xl font-bold tracking-tight text-espresso-900 block leading-tight">Café Explorer</span>
+          <span class="text-xs text-espresso-500 font-medium">尋找城市的下一處安身之所</span>
+        </div>
+      </div>
+
+      <nav class="flex items-center space-x-2">
+        <button id="nav-explore-btn" onclick="switchTab('explore')" class="px-5 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 bg-espresso-700 text-white shadow-sm">
+          <i class="fa-solid fa-compass"></i>
+          <span>探索店家</span>
+        </button>
+        <button id="nav-fav-btn" onclick="switchTab('favorites')" class="px-5 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 text-espresso-700 hover:bg-espresso-200/50 relative">
+          <i class="fa-solid fa-heart text-rose-500"></i>
+          <span>我的收藏</span>
+          <span id="fav-badge" class="hidden ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-rose-500 text-white rounded-full leading-none">0</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- 主要內容區 -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 flex-grow w-full">
+
+    <!-- 探索主視圖 -->
+    <section id="explore-view" class="space-y-8">
+      
+      <!-- Hero Banner -->
+      <div class="relative bg-gradient-to-r from-espresso-900 via-espresso-800 to-espresso-950 rounded-3xl p-8 sm:p-12 text-white overflow-hidden shadow-xl">
+        <div class="absolute -right-10 -bottom-10 opacity-10 text-cream-50 text-9xl pointer-events-none">
+          <i class="fa-solid fa-mug-hot"></i>
+        </div>
+        <div class="max-w-2xl space-y-4 relative z-10">
+          <span class="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-400/30 rounded-full text-xs font-semibold tracking-wider uppercase inline-block">
+            <i class="fa-solid fa-bolt mr-1"></i> 全台 22 縣市 • 完整連鎖與獨立品牌
+          </span>
+          <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
+            Coffee Time
+          </h1>
+          <p class="text-espresso-200 text-sm sm:text-base leading-relaxed">
+            結合星巴克、路易莎、cama、客美多及質感在地獨立老宅，一鍵探索您最愛的風格角落。
+          </p>
+        </div>
+      </div>
+
+      <!-- 近期熱門推薦區塊 (Top Recommended) -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-bold text-espresso-950 flex items-center gap-2">
+            <i class="fa-solid fa-fire text-amber-500"></i>
+            <span id="featured-title">近期熱門精選推薦</span>
+          </h2>
+          <span class="text-xs text-espresso-500 font-medium">依選擇之縣市即時聯動</span>
+        </div>
+        <div id="featured-cards-container" class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <!-- 動態渲染 -->
+        </div>
+      </div>
+
+      <!-- 篩選面板 -->
+      <div class="bg-white rounded-3xl p-6 border border-espresso-200/80 shadow-sm space-y-5">
+        <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
+          <div class="relative w-full sm:w-96">
+            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-espresso-400"></i>
+            <input type="text" id="search-input" oninput="applyFilters()" placeholder="搜尋店名、關鍵字..." 
+                   class="w-full pl-11 pr-4 py-3 rounded-2xl border border-espresso-200 focus:outline-none focus:ring-2 focus:ring-espresso-500/50 bg-cream-50/50 text-sm">
+          </div>
+
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <select id="city-select" onchange="onCityChange()" class="bg-cream-50 border border-espresso-200 text-espresso-900 rounded-xl px-3 py-2 text-xs sm:text-sm font-medium focus:outline-none w-1/2 sm:w-auto">
+              <option value="all">全台灣 (所有縣市)</option>
+            </select>
+            <select id="district-select" onchange="applyFilters()" class="bg-cream-50 border border-espresso-200 text-espresso-900 rounded-xl px-3 py-2 text-xs sm:text-sm font-medium focus:outline-none w-1/2 sm:w-auto">
+              <option value="all">全區域 (鄉鎮市區)</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+            <button onclick="resetFilters()" class="text-sm text-espresso-600 hover:text-espresso-900 font-medium flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-espresso-100 transition-colors">
+              <i class="fa-solid fa-rotate-left"></i>
+              <span>重設</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 類型與風格篩選 -->
+        <div class="space-y-4 pt-4 border-t border-espresso-100">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <span class="text-xs font-bold text-espresso-500 w-20 flex-shrink-0"><i class="fa-solid fa-building-user mr-1"></i>店家類型</span>
+            <div class="flex flex-wrap gap-2" id="chain-filter-group">
+              <button onclick="toggleFilter('chain', 'all')" data-val="all" class="filter-btn-chain px-3.5 py-1.5 rounded-full text-xs font-medium border border-espresso-800 bg-espresso-800 text-white transition-all">全部 (連鎖與獨立)</button>
+              <button onclick="toggleFilter('chain', 'independent')" data-val="independent" class="filter-btn-chain px-3.5 py-1.5 rounded-full text-xs font-medium border border-espresso-200 bg-cream-50 text-espresso-700 hover:border-espresso-400 transition-all">獨立咖啡廳</button>
+              <button onclick="toggleFilter('chain', 'chain')" data-val="chain" class="filter-btn-chain px-3.5 py-1.5 rounded-full text-xs font-medium border border-espresso-200 bg-cream-50 text-espresso-700 hover:border-espresso-400 transition-all">連鎖咖啡廳</button>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <span class="text-xs font-bold text-espresso-500 w-20 flex-shrink-0"><i class="fa-solid fa-store mr-1"></i>環境風格</span>
+            <div class="flex flex-wrap gap-2" id="env-filter-group">
+              <button onclick="toggleFilter('env', 'all')" data-val="all" class="filter-btn-env px-3.5 py-1.5 rounded-full text-xs font-medium border border-espresso-800 bg-espresso-800 text-white transition-all">全部風格</button>
+              <button onclick="toggleFilter('env', '安靜舒適')" data-val="安靜舒適" class="filter-btn-env px-3.5 py-1.5 rounded-full text-xs font-medium border border-espresso-200 bg-cream-50 text-espresso-700 hover:border-espresso-400 transition-all">安靜舒適</button>
+              <button onclick="toggleFilter('env', '老宅復古')" data-val="老宅復古" class="filter-btn-env px-3.5 py-1.5 rounded-full text-xs font-medium border border-espresso-200 bg-cream-50 text-espresso-700 hover:border-espresso-400 transition-all">老宅復古</button>
+              <button onclick="toggleFilter('env', '極簡現代')" data-val="極簡現代" class="filter-btn-env px-3.5 py-1.5 rounded-full text-xs font-medium border border-espresso-200 bg-cream-50 text-espresso-700 hover:border-espresso-400 transition-all">極簡現代</button>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <span class="text-xs font-bold text-espresso-500 w-20 flex-shrink-0"><i class="fa-solid fa-plug mr-1"></i>插座需求</span>
+            <div class="flex flex-wrap gap-2" id="socket-filter-group">
+              <button onclick="toggleFilter('socket', 'all')" data-val="all" class="filter-btn-socket px-3.5 py-1.5 rounded-full text-xs font-medium border border-espresso-800 bg-espresso-800 text-white transition-all">不限</button>
+              <button onclick="toggleFilter('socket', '充足插座')" data-val="充足插座" class="filter-btn-socket px-3.5 py-1.5 rounded-full text-xs font-medium border border-espresso-200 bg-cream-50 text-espresso-700 hover:border-espresso-400 transition-all">充足插座</button>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <span class="text-xs font-bold text-espresso-500 w-20 flex-shrink-0"><i class="fa-solid fa-coins mr-1"></i>價格區間</span>
+            <div class="flex flex-wrap gap-2" id="price-filter-group">
+              <button onclick="toggleFilter('price', 'all')" data-val="all" class="filter-btn-price px-3.5 py-1.5 rounded-full text-xs font-medium border border-espresso-800 bg-espresso-800 text-white transition-all">全部</button>
+              <button onclick="toggleFilter('price', '100-200')" data-val="100-200" class="filter-btn-price px-3.5 py-1.5 rounded-full text-xs font-medium border border-espresso-200 bg-cream-50 text-espresso-700 hover:border-espresso-400 transition-all">100-200</button>
+              <button onclick="toggleFilter('price', '200-300')" data-val="200-300" class="filter-btn-price px-3.5 py-1.5 rounded-full text-xs font-medium border border-espresso-200 bg-cream-50 text-espresso-700 hover:border-espresso-400 transition-all">200-300</button>
+              <button onclick="toggleFilter('price', '300-500')" data-val="300-500" class="filter-btn-price px-3.5 py-1.5 rounded-full text-xs font-medium border border-espresso-200 bg-cream-50 text-espresso-700 hover:border-espresso-400 transition-all">300-500</button>
+              <button onclick="toggleFilter('price', '500以上')" data-val="500以上" class="filter-btn-price px-3.5 py-1.5 rounded-full text-xs font-medium border border-espresso-200 bg-cream-50 text-espresso-700 hover:border-espresso-400 transition-all">500以上</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 列表與排序 (已移除地圖切換按鈕) -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm text-espresso-600 px-1">
+        <div class="flex items-center gap-3">
+          <div>找到 <span id="cafe-count" class="font-bold text-espresso-900 text-base">0</span> 間特色咖啡廳</div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <select id="sort-select" onchange="applyFilters()" class="bg-white border border-espresso-200 text-espresso-800 rounded-xl px-3 py-1.5 text-xs font-medium focus:outline-none">
+            <option value="rating-desc">評價最高</option>
+            <option value="reviews-desc">評論最多</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 卡片列表 -->
+      <div id="cafe-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+      <!-- 無結果提示 -->
+      <div id="empty-results" class="hidden py-16 text-center space-y-4 bg-white rounded-3xl border border-dashed border-espresso-200">
+        <div class="w-16 h-16 bg-espresso-100 rounded-full flex items-center justify-center mx-auto text-espresso-500 text-2xl">
+          <i class="fa-solid fa-mug-saucer"></i>
+        </div>
+        <h3 class="text-lg font-bold text-espresso-900">找不到符合條件的咖啡廳</h3>
+        <button onclick="resetFilters()" class="px-5 py-2.5 bg-espresso-700 hover:bg-espresso-800 text-white rounded-xl text-sm font-medium">重設篩選</button>
+      </div>
+    </section>
+
+    <!-- 收藏分頁 -->
+    <section id="favorites-view" class="hidden space-y-6">
+      <div class="bg-cream-100/60 rounded-3xl p-6 sm:p-8 border border-espresso-200 flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-bold text-espresso-900 flex items-center gap-2">
+            <i class="fa-solid fa-heart text-rose-500"></i> 我的收藏口袋名單
+          </h2>
+        </div>
+        <button onclick="clearAllFavorites()" id="clear-all-fav-btn" class="text-xs text-rose-600 bg-white border border-rose-200 px-4 py-2 rounded-xl font-medium">清空收藏</button>
+      </div>
+      <div id="fav-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+      <div id="fav-empty" class="hidden py-16 text-center space-y-4 bg-white rounded-3xl border border-dashed border-espresso-200">
+        <h3 class="text-lg font-bold text-espresso-900">目前尚無收藏的咖啡廳</h3>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 詳細資訊與菜單彈窗 Modal -->
+  <div id="modal-backdrop" onclick="closeModal(event)" class="fixed inset-0 bg-espresso-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+    <div id="modal-card" class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300 max-h-[90vh] flex flex-col">
+      
+      <div class="relative h-60 w-full bg-espresso-200 flex-shrink-0">
+        <img id="modal-img" src="" alt="" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+        <button onclick="closeModalDirect()" class="absolute top-4 right-4 w-9 h-9 bg-black/40 text-white rounded-full flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div class="absolute bottom-4 left-6 right-6 text-white space-y-1">
+          <div class="flex items-center gap-2 flex-wrap" id="modal-badges"></div>
+          <h2 id="modal-title" class="text-2xl font-bold"></h2>
+          <p id="modal-address" class="text-xs text-espresso-200 flex items-center gap-1.5"></p>
+        </div>
+      </div>
+
+      <div class="p-6 space-y-6 overflow-y-auto custom-scrollbar flex-grow text-espresso-900">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-cream-50 p-4 rounded-2xl border text-center">
+          <div>
+            <div class="text-xs text-espresso-500">綜合評分</div>
+            <div class="text-lg font-bold text-amber-500 mt-0.5"><span id="modal-rating">--</span></div>
+          </div>
+          <div>
+            <div class="text-xs text-espresso-500">消費低消</div>
+            <div id="modal-min-spend" class="text-sm font-bold text-espresso-800 mt-1">--</div>
+          </div>
+          <div>
+            <div class="text-xs text-espresso-500">時間限制</div>
+            <div id="modal-time-limit" class="text-sm font-bold text-espresso-800 mt-1">--</div>
+          </div>
+          <div>
+            <div class="text-xs text-espresso-500">插座配備</div>
+            <div id="modal-sockets" class="text-sm font-bold text-espresso-800 mt-1">--</div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <h3 class="text-sm font-bold text-espresso-900 uppercase">店家特色簡介</h3>
+          <p id="modal-desc" class="text-sm text-espresso-700 leading-relaxed"></p>
+        </div>
+
+        <!-- 完整菜單與價格表 -->
+        <div class="space-y-3">
+          <h3 class="text-sm font-bold text-espresso-900 uppercase flex items-center gap-2">
+            <i class="fa-solid fa-book-open text-espresso-600"></i> 店內詳細菜單與價格表
+          </h3>
+          <div id="modal-full-menu" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+        </div>
+
+        <div class="pt-4 border-t border-espresso-100 flex items-center justify-between">
+          <a id="modal-map-btn" href="#" target="_blank" rel="noopener noreferrer" 
+             class="px-5 py-2.5 bg-espresso-800 text-white rounded-xl text-sm font-medium flex items-center gap-2">
+            <i class="fa-solid fa-location-dot"></i> Google 地圖導航
+          </a>
+          <button id="modal-fav-toggle" class="px-5 py-2.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-xl text-sm font-medium">加入收藏</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-6 right-6 bg-espresso-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 opacity-0 translate-y-4 pointer-events-none transition-all duration-300 z-50">
+    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toast-msg" class="text-sm font-medium">訊息</span>
+  </div>
+
+  <!-- JavaScript 核心邏輯 -->
+  <script>
+    // 1. 台灣完整 22 縣市與所有鄉鎮市區對照表
+    const taiwanDistricts = {
+      "台北市": ["中正區", "大同區", "中山區", "松山區", "大安區", "萬華區", "信義區", "士林區", "北投區", "內湖區", "南港區", "文山區"],
+      "新北市": ["板橋區", "三重區", "中和區", "永和區", "新莊區", "新店區", "樹林區", "鶯歌區", "三峽區", "淡水區", "汐止區", "瑞芳區", "土城區", "蘆洲區", "五股區", "泰山區", "林口區", "深坑區", "石碇區", "坪林區", "三芝區", "石門區", "八里區", "平溪區", "雙溪區", "貢寮區", "金山區", "萬里區", "烏來區"],
+      "基隆市": ["仁愛區", "信義區", "中正區", "中山區", "安樂區", "暖暖區", "七堵區"],
+      "桃園市": ["桃園區", "中壢區", "大溪區", "楊梅區", "蘆竹區", "大園區", "龜山區", "八德區", "龍潭區", "平鎮區", "新屋區", "觀音區", "復興區"],
+      "新竹市": ["東區", "北區", "香山區", "巨城商圈", "清交大學城", "竹科關埔區", "城隍廟舊城區", "南寮漁港"],
+      "新竹縣": ["竹北市", "關西鎮", "新埔鎮", "竹東鎮", "湖口鄉", "橫山鄉", "新豐鄉", "芎林鄉", "寶山鄉", "北埔鄉", "峨眉鄉", "尖石鄉", "五峰鄉"],
+      "苗栗縣": ["苗栗市", "頭份市", "竹南鎮", "後龍鎮", "通霄鎮", "苑裡鎮", "卓蘭鎮", "造橋鄉", "西湖鄉", "頭屋鄉", "公館鄉", "銅鑼鄉", "三義鄉", "大湖鄉", "獅潭鄉", "三灣鄉", "南莊鄉", "泰安鄉"],
+      "台中市": ["中區", "東區", "南區", "西區", "北區", "北屯區", "西屯區", "南屯區", "太平區", "大里區", "霧峰區", "烏日區", "豐原區", "后里區", "石岡區", "東勢區", "和平區", "新社區", "潭子區", "大雅區", "神岡區", "大肚區", "沙鹿區", "龍井區", "梧棲區", "清水區", "大甲區", "外埔區", "大安區"],
+      "彰化縣": ["彰化市", "員林市", "和美鎮", "鹿港鎮", "溪湖鎮", "二林鎮", "田中鎮", "北斗鎮", "花壇鄉", "芬園鄉", "線西鄉", "伸港鄉", "秀水鄉", "埔心鄉", "永靖鄉", "社頭鄉", "二水鄉", "田尾鄉", "埤頭鄉", "芳苑鄉", "大城鄉", "竹塘鄉", "溪州鄉"],
+      "南投縣": ["南投市", "埔里鎮", "草屯鎮", "竹山鎮", "集集鎮", "名間鄉", "鹿谷鄉", "中寮鄉", "魚池鄉", "國姓鄉", "水里鄉", "信義鄉", "仁愛鄉"],
+      "雲林縣": ["斗六市", "斗南鎮", "虎尾鎮", "西螺鎮", "土庫鎮", "北港鎮", "古坑鄉", "大埤鄉", "莿桐鄉", "林內鄉", "二崙鄉", "崙背鄉", "麥寮鄉", "東勢鄉", "褒忠鄉", "臺西鄉", "元長鄉", "四湖鄉", "口湖鄉", "水林鄉"],
+      "嘉義市": ["東區", "西區"],
+      "嘉義縣": ["太保市", "朴子市", "布袋鎮", "大林鎮", "民雄鄉", "溪口鄉", "新港鄉", "六腳鄉", "東石鄉", "義竹鄉", "鹿草鄉", "水上鄉", "中埔鄉", "竹崎鄉", "梅山鄉", "番路鄉", "大埔鄉", "阿里山鄉"],
+      "台南市": ["中西區", "東區", "南區", "北區", "安平區", "安南區", "永康區", "歸仁區", "新化區", "左鎮區", "玉井區", "楠西區", "南化區", "仁德區", "關廟區", "龍崎區", "官田區", "麻豆區", "佳里區", "西港區", "七股區", "將軍區", "學甲區", "北門區", "新營區", "後壁區", "白河區", "東山區", "六甲區", "下營區", "柳營區", "鹽水區", "善化區", "大內區", "山上區", "新市區", "安定區"],
+      "高雄市": ["楠梓區", "左營區", "鼓山區", "三民區", "鹽埕區", "前金區", "新興區", "苓雅區", "前鎮區", "旗津區", "小港區", "鳳山區", "林園區", "大寮區", "大樹區", "大社區", "仁武區", "鳥松區", "岡山區", "橋頭區", "燕巢區", "田寮區", "阿蓮區", "路竹區", "湖內區", "茄萣區", "永安區", "彌陀區", "梓官區", "旗山區", "美濃區", "六龜區", "杉林區", "甲仙區", "桃源區", "茂林區", "那瑪夏區"],
+      "屏東縣": ["屏東市", "潮州鎮", "東港鎮", "恆春鎮", "萬丹鄉", "長治鄉", "麟洛鄉", "九如鄉", "里港鄉", "鹽埔鄉", "高樹鄉", "萬巒鄉", "內埔鄉", "竹田鄉", "新埤鄉", "枋寮鄉", "新園鄉", "崁頂鄉", "林邊鄉", "南州鄉", "佳冬鄉", "琉球鄉", "車城鄉", "滿州鄉", "枋山鄉", "三地門鄉", "霧臺鄉", "瑪家鄉", "泰武鄉", "來義鄉", "春日鄉", "獅子鄉", "牡丹鄉"],
+      "宜蘭縣": ["宜蘭市", "羅東鎮", "蘇澳鎮", "頭城鎮", "礁溪鄉", "壯圍鄉", "員山鄉", "冬山鄉", "五結鄉", "三星鄉", "大同鄉", "南澳鄉"],
+      "花蓮縣": ["花蓮市", "鳳林鎮", "玉里鎮", "新城鄉", "吉安鄉", "壽豐鄉", "光復鄉", "豐濱鄉", "瑞穗鄉", "富里鄉", "秀林鄉", "萬榮鄉", "卓溪鄉"],
+      "台東縣": ["臺東市", "成功鎮", "關山鎮", "卑南鄉", "大武鄉", "太麻里鄉", "東河鄉", "長濱鄉", "鹿野鄉", "池上鄉", "綠島鄉", "蘭嶼鄉", "延平鄉", "金峰鄉", "達仁鄉"],
+      "澎湖縣": ["馬公市", "湖西鄉", "白沙鄉", "西嶼鄉", "望安鄉", "七美鄉"],
+      "金門縣": ["金城鎮", "金沙鎮", "金湖鎮", "金寧鄉", "烈嶼鄉", "烏坵鄉"],
+      "連江縣": ["南竿鄉", "北竿鄉", "莒光鄉", "東引鄉"]
+    };
+
+    // 2. 核心輕量基礎咖啡廳資料庫
+    const cafesData = [
+      { id: "taipei_daan_1", city: "台北市", district: "大安區", lat: 25.0189, lng: 121.5323, name: "靜謐微光精品咖啡", subtitle: "獨立老宅手沖據點", rating: 4.8, reviewsCount: 128, priceRange: "$$", envStyle: "復古", socketType: "yes", minSpend: "低消一杯飲料", timeLimit: "不限時", isUnlimited: true, tags: ["適合讀書", "極速WiFi", "插座充沛", "獨立咖啡廳"], address: "台北市大安區溫州街 48 巷 12 號", image: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80", sockets: "幾乎每個座位皆有插座", noiseLevel: "極安靜", wifiQuality: "高速光纖", hours: "11:00 - 22:00", desc: "改建自老洋房，保留磨石子地板與木窗。提供獨立桌燈與極佳降噪環境。", popularItems: ["極深焙手沖", "焦糖肉桂捲", "靜岡抹茶拿鐵"] },
+      { id: "starbucks_taipei_1", city: "台北市", district: "大安區", lat: 25.0210, lng: 121.5400, name: "星巴克 (台北大安旗艦店)", subtitle: "全球連鎖咖啡標竿", rating: 4.6, reviewsCount: 620, priceRange: "$$$", envStyle: "現代", socketType: "yes", minSpend: "低消一杯飲料或餐點", timeLimit: "不限時", isUnlimited: true, tags: ["連鎖品牌", "連鎖咖啡廳", "適合讀書", "商務辦公"], address: "台北市大安區信義路四段 200 號", image: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80", sockets: "長桌區提供充足插座", noiseLevel: "適中", wifiQuality: "星巴克高速WiFi", hours: "07:00 - 22:30", desc: "寬敞明亮的現代化空間，提供優質的星巴克特選咖啡與糕點。", popularItems: ["那堤", "星冰樂", "燻雞肉蛋餅"] }
+    ];
+
+    let currentTab = 'explore';
+    let favorites = JSON.parse(localStorage.getItem('cafe_favorites') || '[]');
+    let filters = {
+      search: '',
+      city: 'all',
+      district: 'all',
+      chain: 'all',
+      env: 'all',
+      socket: 'all',
+      timeLimit: 'all',
+      price: 'all',
+      quick: null,
+      sort: 'rating-desc'
+    };
+
+    const generatedCities = new Set();
+
+    function ensureCityData(targetCity) {
+      if (targetCity === 'all') {
+        ['台北市', '台中市', '高雄市', '新北市'].forEach(c => generateCityCafes(c));
+        return;
+      }
+      generateCityCafes(targetCity);
+    }
+
+    function generateCityCafes(city) {
+      if (generatedCities.has(city) || !taiwanDistricts[city]) return;
+
+      const styles = ["安靜舒適", "老宅復古", "極簡現代"];
+      const chainPool = [
+        { name: "黑沃咖啡 HWC Coffee", price: "200-300", img: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80" },
+        { name: "成真咖啡 ComeTrue Coffee", price: "300-500", img: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80" },
+        { name: "路易莎咖啡 Louisa Coffee", price: "100-200", img: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80" },
+        { name: "星巴克 Starbucks", price: "300-500", img: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80" },
+        { name: "cama café", price: "100-200", img: "https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&w=800&q=80" },
+        { name: "客美多咖啡 Komeda's", price: "200-300", img: "https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=800&q=80" }
+      ];
+
+      const indepNames = [
+        "森mori cafe", "時光角落咖啡館", "老宅 48 號喫茶店", "漫步左岸手沖咖啡", 
+        "拾光所 Koffie", "樹下文青咖啡", "微光角落工作室", "旅人光影咖啡"
+      ];
+
+      const districts = taiwanDistricts[city];
+      const itemsPerDist = 20;
+
+      districts.forEach((dist, dIndex) => {
+        for (let i = 0; i < itemsPerDist; i++) {
+          const isChain = i < 8;
+          const style = styles[(i + dIndex) % styles.length];
+          const socketType = (i % 2 === 0) ? "充足插座" : "部分插座";
+          
+          let priceRand = "100-200";
+          const pMod = i % 4;
+          if (pMod === 0) priceRand = "100-200";
+          else if (pMod === 1) priceRand = "200-300";
+          else if (pMod === 2) priceRand = "300-500";
+          else priceRand = "500以上";
+
+          if (isChain) {
+            const chainObj = chainPool[(i + dIndex) % chainPool.length];
+            cafesData.push({
+              id: `gen_chain_${city}_${dist}_${i}`,
+              city: city, district: dist,
+              name: `${chainObj.name} (${dist}門市)`,
+              subtitle: `${dist} 知名連鎖門市`,
+              rating: Number((4.3 + Math.random() * 0.5).toFixed(1)),
+              reviewsCount: Math.floor(150 + Math.random() * 300),
+              priceRange: chainObj.price,
+              envStyle: "極簡現代", 
+              socketType: "充足插座",
+              minSpend: "低消任一品項", timeLimit: "不限時", isUnlimited: true,
+              tags: ["連鎖品牌", "連鎖咖啡廳", "商務辦公", "適合讀書", "極簡現代", "充足插座"],
+              address: `${city}${dist}中山路 ${Math.floor(10 + i * 10)} 號`,
+              image: chainObj.img,
+              sockets: "多數座位提供充足插座", noiseLevel: "適中", wifiQuality: "高速WiFi", hours: "07:30 - 22:00",
+              desc: `${chainObj.name}位於${city}${dist}的熱門分店，提供標準化高品質咖啡。`,
+              popularItems: ["那堤", "黑咖啡", "手作三明治"]
+            });
+          } else {
+            const indepName = indepNames[(i + dIndex) % indepNames.length];
+            cafesData.push({
+              id: `gen_indep_${city}_${dist}_${i}`,
+              city: city, district: dist,
+              name: `${dist} • ${indepName}`,
+              subtitle: `${city}${dist} 巷弄獨立質感角落`,
+              rating: Number((4.5 + Math.random() * 0.4).toFixed(1)),
+              reviewsCount: Math.floor(40 + Math.random() * 180),
+              priceRange: priceRand,
+              envStyle: style, 
+              socketType: socketType,
+              minSpend: "低消一杯飲品", timeLimit: "不限時", isUnlimited: true,
+              tags: ["適合讀書", "獨立咖啡廳", style, socketType],
+              address: `${city}${dist}文華街 ${Math.floor(15 + i * 4)} 巷`,
+              image: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80",
+              sockets: socketType === "充足插座" ? "座位皆有充電插座" : "部分座位有插座",
+              noiseLevel: style === "安靜舒適" ? "極安靜" : "適中",
+              wifiQuality: "免費光纖 WiFi", hours: "10:00 - 21:30",
+              desc: `深耕於${city}${dist}的獨立風格咖啡館，主打${style}氛圍與精緻手沖。`,
+              popularItems: ["手沖單品", "肉桂捲", "提拉米蘇"]
+            });
+          }
+        }
+      });
+      generatedCities.add(city);
+    }
+
+    function initCitySelect() {
+      const citySelect = document.getElementById('city-select');
+      Object.keys(taiwanDistricts).forEach(city => {
+        const opt = document.createElement('option');
+        opt.value = city;
+        opt.textContent = city;
+        citySelect.appendChild(opt);
+      });
+    }
+
+    function onCityChange() {
+      const citySelect = document.getElementById('city-select');
+      const districtSelect = document.getElementById('district-select');
+      const selectedCity = citySelect.value;
+
+      districtSelect.innerHTML = '<option value="all">全區域 (鄉鎮市區)</option>';
+
+      if (selectedCity !== 'all' && taiwanDistricts[selectedCity]) {
+        taiwanDistricts[selectedCity].forEach(dist => {
+          const opt = document.createElement('option');
+          opt.value = dist;
+          opt.textContent = dist;
+          districtSelect.appendChild(opt);
+        });
+      }
+
+      applyFilters();
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      const exploreView = document.getElementById('explore-view');
+      const favoritesView = document.getElementById('favorites-view');
+      const navExploreBtn = document.getElementById('nav-explore-btn');
+      const navFavBtn = document.getElementById('nav-fav-btn');
+
+      if (tab === 'explore') {
+        exploreView.classList.remove('hidden');
+        favoritesView.classList.add('hidden');
+        navExploreBtn.className = "px-5 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 bg-espresso-700 text-white shadow-sm";
+        navFavBtn.className = "px-5 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 text-espresso-700 hover:bg-espresso-200/50";
+      } else {
+        exploreView.classList.add('hidden');
+        favoritesView.classList.remove('hidden');
+        navFavBtn.className = "px-5 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 bg-espresso-700 text-white shadow-sm";
+        navExploreBtn.className = "px-5 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 text-espresso-700 hover:bg-espresso-200/50";
+        renderFavorites();
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function toggleFilter(category, val) {
+      filters[category] = val;
+      const groupMap = { chain: 'chain-filter-group', env: 'env-filter-group', socket: 'socket-filter-group', timeLimit: 'time-filter-group', price: 'price-filter-group' };
+      const groupContainer = groupMap[category];
+      if (groupContainer) {
+        const btns = document.querySelectorAll(`#${groupContainer} button`);
+        btns.forEach(btn => {
+          if (btn.getAttribute('data-val') === val) {
+            btn.className = `filter-btn-${category} px-3.5 py-1.5 rounded-full text-xs font-medium border border-espresso-800 bg-espresso-800 text-white transition-all`;
+          } else {
+            btn.className = `filter-btn-${category} px-3.5 py-1.5 rounded-full text-xs font-medium border border-espresso-200 bg-cream-50 text-espresso-700 hover:border-espresso-400 transition-all`;
+          }
+        });
+      }
+      applyFilters();
+    }
+
+    function resetFilters() {
+      filters = { search: '', city: 'all', district: 'all', chain: 'all', env: 'all', socket: 'all', timeLimit: 'all', price: 'all', quick: null, sort: 'rating-desc' };
+      document.getElementById('search-input').value = '';
+      document.getElementById('city-select').value = 'all';
+      document.getElementById('district-select').innerHTML = '<option value="all">全區域 (鄉鎮市區)</option>';
+      document.getElementById('sort-select').value = 'rating-desc';
+
+      toggleFilter('chain', 'all');
+      toggleFilter('env', 'all');
+      toggleFilter('socket', 'all');
+      toggleFilter('timeLimit', 'all');
+      toggleFilter('price', 'all');
+
+      applyFilters();
+    }
+
+    function renderFeaturedRecommendations() {
+      const container = document.getElementById('featured-cards-container');
+      const titleEl = document.getElementById('featured-title');
+      if (!container) return;
+
+      const currentCity = filters.city;
+      let pool = currentCity === 'all' 
+        ? [...cafesData].sort((a, b) => b.rating - a.rating).slice(0, 3)
+        : cafesData.filter(c => c.city === currentCity).sort((a, b) => b.rating - a.rating).slice(0, 3);
+
+      if (pool.length === 0) {
+        container.innerHTML = `<div class="col-span-3 text-center py-6 text-sm text-espresso-500 bg-white rounded-2xl border">無推薦資料</div>`;
+        return;
+      }
+
+      container.innerHTML = pool.map((cafe, index) => `
+        <div class="relative bg-white rounded-2xl p-4 border-2 border-amber-300/60 shadow-md flex flex-col justify-between">
+          <div class="relative h-36 rounded-xl overflow-hidden mb-3 bg-espresso-100">
+            <img src="${cafe.image}" class="w-full h-full object-cover">
+            <div class="absolute top-2.5 left-2.5 bg-amber-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">TOP ${index+1}</div>
+          </div>
+          <div class="font-bold text-sm text-espresso-950 mb-1">${cafe.name}</div>
+          <div class="flex items-center justify-between pt-2 border-t text-xs">
+            <span class="text-amber-500 font-bold"><i class="fa-solid fa-star"></i> ${cafe.rating}</span>
+            <button onclick="openModal('${cafe.id}')" class="px-3 py-1 bg-espresso-800 text-white rounded-xl">查看細節</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function applyFilters() {
+      filters.search = document.getElementById('search-input').value.trim().toLowerCase();
+      filters.city = document.getElementById('city-select').value;
+      filters.district = document.getElementById('district-select').value;
+      filters.sort = document.getElementById('sort-select').value;
+
+      ensureCityData(filters.city);
+
+      let result = cafesData.filter(cafe => {
+        const matchSearch = !filters.search || 
+          cafe.name.toLowerCase().includes(filters.search) ||
+          cafe.address.toLowerCase().includes(filters.search);
+
+        const matchCity = filters.city === 'all' || cafe.city === filters.city;
+        const matchDistrict = filters.district === 'all' || cafe.district === filters.district;
+        
+        const isChain = cafe.tags.includes('連鎖品牌');
+        const matchChain = filters.chain === 'all' || 
+                           (filters.chain === 'chain' && isChain) || 
+                           (filters.chain === 'independent' && !isChain);
+
+        const matchEnv = filters.env === 'all' || cafe.envStyle === filters.env;
+        const matchSocket = filters.socket === 'all' || cafe.socketType === filters.socket;
+        const matchPrice = filters.price === 'all' || cafe.priceRange === filters.price;
+
+        return matchSearch && matchCity && matchDistrict && matchChain && matchEnv && matchSocket && matchPrice;
+      });
+
+      result.sort((a, b) => {
+        if (filters.sort === 'rating-desc') return b.rating - a.rating;
+        if (filters.sort === 'reviews-desc') return b.reviewsCount - a.reviewsCount;
+        return 0;
+      });
+
+      renderCafeGrid(result);
+      renderFeaturedRecommendations();
+    }
+
+    function renderCafeGrid(list) {
+      const cafeGrid = document.getElementById('cafe-grid');
+      const emptyResults = document.getElementById('empty-results');
+      const cafeCount = document.getElementById('cafe-count');
+
+      cafeCount.textContent = list.length;
+
+      if (list.length === 0) {
+        cafeGrid.innerHTML = '';
+        emptyResults.classList.remove('hidden');
+        return;
+      }
+
+      emptyResults.classList.add('hidden');
+      cafeGrid.innerHTML = list.map(cafe => `
+        <div class="bg-white rounded-3xl overflow-hidden border border-espresso-200/70 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group hover:-translate-y-1">
+          <div class="relative h-52 overflow-hidden bg-espresso-100">
+            <img src="${cafe.image}" alt="${cafe.name}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80"></div>
+            <div class="absolute top-3 left-3 flex items-center gap-1.5">
+              <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-espresso-900/90 text-white">${cafe.city} • ${cafe.district}</span>
+              <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-black/50 text-white">${cafe.priceRange}</span>
+            </div>
+            <div class="absolute bottom-3 left-3 flex items-center space-x-1 text-amber-400 text-xs font-bold">
+              <i class="fa-solid fa-star"></i>
+              <span class="text-white text-sm font-extrabold">${cafe.rating}</span>
+            </div>
+          </div>
+          <div class="p-5 flex-grow flex flex-col justify-between space-y-4">
+            <div class="space-y-2.5">
+              <h3 class="text-lg font-bold text-espresso-950">${cafe.name}</h3>
+              <p class="text-xs text-espresso-500 font-medium">${cafe.subtitle}</p>
+            </div>
+            <div class="pt-3 border-t border-espresso-100 flex items-center justify-between">
+              <span class="text-xs text-espresso-500 truncate max-w-[185px]"><i class="fa-solid fa-location-dot"></i> ${cafe.address}</span>
+              <button onclick="openModal('${cafe.id}')" class="font-bold text-xs text-espresso-700 hover:underline">詳細資訊 →</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderFavorites() {
+      const grid = document.getElementById('fav-grid');
+      const empty = document.getElementById('fav-empty');
+      const list = cafesData.filter(c => favorites.includes(c.id));
+      if (list.length === 0) {
+        grid.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+      grid.innerHTML = list.map(cafe => `
+        <div class="bg-white rounded-3xl overflow-hidden border p-4 shadow-sm flex flex-col justify-between">
+          <h3 class="font-bold">${cafe.name}</h3>
+          <button onclick="openModal('${cafe.id}')" class="mt-2 py-1 bg-espresso-800 text-white text-xs rounded-xl">查看詳情</button>
+        </div>
+      `).join('');
+    }
+
+    function clearAllFavorites() {
+      favorites = [];
+      localStorage.setItem('cafe_favorites', JSON.stringify(favorites));
+      updateFavBadge();
+      renderFavorites();
+    }
+
+    function updateFavBadge() {
+      const badge = document.getElementById('fav-badge');
+      if (!badge) return;
+      if (favorites.length > 0) {
+        badge.textContent = favorites.length;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function toggleFavorite(e, id) {
+      if (e) e.stopPropagation();
+      const idx = favorites.indexOf(id);
+      if (idx > -1) favorites.splice(idx, 1);
+      else favorites.push(id);
+      localStorage.setItem('cafe_favorites', JSON.stringify(favorites));
+      updateFavBadge();
+      applyFilters();
+    }
+
+    function openModal(id) {
+      const cafe = cafesData.find(c => c.id === id);
+      if (!cafe) return;
+      document.getElementById('modal-img').src = cafe.image;
+      document.getElementById('modal-title').textContent = cafe.name;
+      document.getElementById('modal-address').innerHTML = `<i class="fa-solid fa-location-dot"></i> ${cafe.address}`;
+      document.getElementById('modal-rating').textContent = `${cafe.rating} (${cafe.reviewsCount})`;
+      document.getElementById('modal-min-spend').textContent = cafe.minSpend;
+      document.getElementById('modal-time-limit').textContent = cafe.timeLimit;
+      document.getElementById('modal-sockets').textContent = cafe.sockets;
+      document.getElementById('modal-desc').textContent = cafe.desc;
+
+      const fullMenuEl = document.getElementById('modal-full-menu');
+      fullMenuEl.innerHTML = [
+        { name: "莊園美式咖啡", price: 100 },
+        { name: "手沖單品咖啡", price: 160 },
+        { name: "經典拿鐵", price: 130 },
+        { name: "招牌焦糖肉桂捲", price: 120 },
+        { name: "法式提拉米蘇", price: 140 }
+      ].map(m => `
+        <div class="flex justify-between p-2.5 rounded-xl bg-cream-50 border text-xs">
+          <span class="font-bold">${m.name}</span>
+          <span class="font-mono text-amber-800 font-bold">NT$ ${m.price}</span>
+        </div>
+      `).join('');
+
+      document.getElementById('modal-map-btn').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cafe.name + ' ' + cafe.address)}`;
+      
+      const favToggle = document.getElementById('modal-fav-toggle');
+      const isFav = favorites.includes(id);
+      favToggle.textContent = isFav ? "已收藏" : "加入收藏";
+      favToggle.onclick = (e) => toggleFavorite(e, id);
+
+      const backdrop = document.getElementById('modal-backdrop');
+      backdrop.classList.remove('pointer-events-none', 'opacity-0');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(e) { if (e.target.id === 'modal-backdrop') closeModalDirect(); }
+    function closeModalDirect() {
+      document.getElementById('modal-backdrop').classList.add('opacity-0', 'pointer-events-none');
+      document.body.style.overflow = 'auto';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      ensureCityData('all');
+      initCitySelect();
+      updateFavBadge();
+      applyFilters();
+    });
+  </script>
+</body>
+</html>
